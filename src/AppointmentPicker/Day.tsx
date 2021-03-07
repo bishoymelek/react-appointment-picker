@@ -1,8 +1,9 @@
 import React, { Component } from 'react';
-import DayNumber from './DayNumber';
+import DayName from './DayName';
 
 interface DayProps {
-  dayNumber: string;
+  dayName: string;
+  actualDay?: any;
   visible: boolean;
   isSelected: boolean;
   children: React.ReactNode;
@@ -10,7 +11,10 @@ interface DayProps {
 
 export class Day extends Component<DayProps> {
   render() {
-    const { visible, dayNumber, isSelected } = this.props;
+    const { visible, dayName, isSelected, actualDay } = this.props;
+    var dayNumber = actualDay.getUTCDate();
+    var monthNumber = actualDay.getUTCMonth() + 1;
+
     const className =
       'appointment-picker__col' +
       (isSelected
@@ -18,7 +22,12 @@ export class Day extends Component<DayProps> {
         : ' appointment-picker__col--enabled');
     return (
       <div className={className}>
-        <DayNumber dayNumber={dayNumber} visible={visible} />
+        <DayName
+          dayName={dayName}
+          dayNumber={dayNumber}
+          monthNumber={monthNumber}
+          visible={visible}
+        />
         {this.props.children}
       </div>
     );

@@ -70,6 +70,8 @@ interface AppointmentPickerPropsInterface {
   visible?: boolean;
   loading?: boolean;
   days: AppointmentAttributesType[][];
+  weeklyDisplay?: boolean;
+  numberOfMonths?: number;
 }
 
 interface SelectedAppointmentInterface {
@@ -87,6 +89,7 @@ interface AppointmentPickerStateInterface {
   size: number;
   dayPeriods: number[];
   dayLength: number;
+  currentWeekFirstDay?: Date;
 }
 
 export class AppointmentPicker extends Component<
@@ -109,7 +112,7 @@ export class AppointmentPicker extends Component<
       );
       removeCb(day, number);
     },
-    maxReservableAppointments: 0,
+    maxReservableAppointments: -1,
     initialDay: new Date(),
     unitTime: 15 * 60 * 1000,
     local: 'en-US'
@@ -117,7 +120,7 @@ export class AppointmentPicker extends Component<
 
   constructor(props: AppointmentPickerPropsInterface) {
     super(props);
-    const { days } = props;
+    const { days, initialDay } = props;
     const {
       selectedAppointments,
       size
@@ -133,12 +136,16 @@ export class AppointmentPicker extends Component<
       });
       return periods;
     });
+
     this.state = {
       selectedAppointments: selectedAppointments,
       size: size,
       dayPeriods,
-      dayLength: Math.max.apply(null, dayPeriods)
+      dayLength: Math.max.apply(null, dayPeriods),
+      currentWeekFirstDay: new Date(initialDay)
     };
+    this.showPreviousWeek = this.showPreviousWeek.bind(this);
+    this.showNextWeek = this.showNextWeek.bind(this);
   }
 
   static getDerivedStateFromProps(
@@ -181,7 +188,8 @@ export class AppointmentPicker extends Component<
   ) {
     return (
       nextState.selectedAppointments !== this.state.selectedAppointments ||
-      this.props.loading !== nextProps.loading
+      this.props.loading !== nextProps.loading ||
+      nextState.currentWeekFirstDay !== this.state.currentWeekFirstDay
     );
   }
 
@@ -201,7 +209,7 @@ export class AppointmentPicker extends Component<
         const actualDay = new Date(
           initialDay.getTime() + 60 * 60 * 24 * 1000 * index
         );
-        const dayNumber = alpha
+        const dayName = alpha
           ? actualDay.toLocaleDateString(local, { weekday: 'long' })
           : actualDay.toLocaleDateString(local);
 
@@ -215,7 +223,7 @@ export class AppointmentPicker extends Component<
             ).toLocaleTimeString(local);
             const appointmentAlreadySelected = this.includeAppointment(
               selectedAppointments,
-              dayNumber,
+              dayName,
               appointment.number
             );
             if (
@@ -224,7 +232,7 @@ export class AppointmentPicker extends Component<
             ) {
               this.addAppointment(
                 selectedAppointments,
-                dayNumber,
+                dayName,
                 appointment.number,
                 time,
                 appointment.id
@@ -377,59 +385,89 @@ export class AppointmentPicker extends Component<
     }
   };
 
+  showNextWeek() {
+    const { currentWeekFirstDay } = this.state;
+    const actualDay = new Date(currentWeekFirstDay);
+    actualDay.setDate(actualDay.getDate() + 7);
+    this.setState((prevState) => ({
+      ...prevState,
+      currentWeekFirstDay: actualDay
+    }));
+  }
+
+  showPreviousWeek() {
+    const { currentWeekFirstDay } = this.state;
+    const actualDay = new Date(currentWeekFirstDay);
+    actualDay.setDate(actualDay.getDate() - 7);
+    this.setState((prevState) => ({
+      ...prevState,
+      currentWeekFirstDay: actualDay
+    }));
+  }
+
   render() {
+    const { weeklyDisplay } = this.props;
     return (
       <div className='appointment-content'>
         <div className={this.props.loading ? 'loader' : undefined} />
-        <div className='appointment-picker'>{this.renderDays()}</div>
+        {weeklyDisplay && (
+          <div id='weekly-changer'>
+            <i className='arrow right' onClick={this.showPreviousWeek} />
+            <i className='arrow left' onClick={this.showNextWeek} />
+          </div>
+        )}
+        <div className='appointment-picker'>{this.renderDays()} </div>
       </div>
     );
   }
 
-  renderDays() {
-    const { selectedAppointments: appointments, dayPeriods } = this.state;
-    const { alpha, visible, initialDay, local } = this.props;
-    return this.props.days.map((day, index) => {
-      const actualDay = new Date(
-        initialDay.getTime() + 60 * 60 * 24 * 1000 * index
-      );
-      /* const options = {
-        weekday: 'long'
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      } */
-      const dayNumber = alpha
-        ? actualDay.toLocaleDateString(local, { weekday: 'long' })
-        : actualDay.toLocaleDateString(local);
+  renderDays(): JSX.Element {
+    const {
+      selectedAppointments: appointments,
+      dayPeriods,
+      currentWeekFirstDay
+    } = this.state;
+    const { alpha, visible, local } = this.props;
+    return (
+      <>
+        {this.props.days.map((day, index) => {
+          const actualDay = new Date(currentWeekFirstDay);
+          actualDay.setDate(actualDay.getDate() + index);
 
-      const isSelected = !!appointments.get(dayNumber);
-      const props = {
-        visible,
-        dayNumber,
-        isSelected,
-        selectedAppointment: null,
-        appointments: day,
-        selectAppointment: this.selectAppointment
-      };
+          const dayName = alpha
+            ? actualDay.toLocaleDateString(local, { weekday: 'long' })
+            : actualDay.toLocaleDateString(local);
 
-      return (
-        <Day key={index} {...props}>
-          {this.renderAppointments(
-            day,
-            dayNumber,
+          const isSelected = !!appointments.get(dayName);
+          const props = {
+            visible,
+            dayName,
+            actualDay,
             isSelected,
-            dayPeriods[index],
-            actualDay
-          )}
-        </Day>
-      );
-    });
+            selectedAppointment: null,
+            appointments: day,
+            selectAppointment: this.selectAppointment
+          };
+
+          return (
+            <Day key={index} {...props}>
+              {this.renderAppointments(
+                day,
+                dayName,
+                isSelected,
+                dayPeriods[index],
+                actualDay
+              )}
+            </Day>
+          );
+        })}
+      </>
+    );
   }
 
   renderAppointments(
     appointments: AppointmentAttributesType[],
-    dayNumber: string,
+    dayName: string,
     isDaySelected: boolean,
     periods: number,
     actualDay: Date
@@ -457,7 +495,7 @@ export class AppointmentPicker extends Component<
         isDaySelected &&
         this.includeAppointment(
           selectedAppointments,
-          dayNumber,
+          dayName,
           appointment.number
         );
       const props = {
@@ -466,7 +504,7 @@ export class AppointmentPicker extends Component<
         isEnabled: size < maxReservableAppointments || continuous,
         selectAppointment: this.selectAppointment.bind(
           this,
-          dayNumber,
+          dayName,
           appointment.number,
           time,
           appointment.id

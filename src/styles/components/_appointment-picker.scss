@@ -2,51 +2,53 @@
   display: flex;
   flex-direction: row;
 
+  margin: 5px auto;
   text-align: center;
   justify-content: center;
   align-items: center;
   width: max-content;
 
-  & > *:not(:last-child){
+  & > *:not(:last-child) {
     margin-right: 0.2rem;
   }
 
-  &__col{
+  &__col {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-items: center;
 
-    & > *:not(:last-child){
+    & > *:not(:last-child) {
       margin-bottom: 0.2rem;
     }
 
-    &__name{
+    &__name {
       font-weight: normal;
-      height: 2rem;
+      // height: 2rem;
       width: 2rem;
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
       text-align: center;
       color: $color-col-name;
     }
 
-    &--enabled{
+    &--enabled {
       &:hover {
         background-color: $color-col-selection;
       }
     }
-    
-    &--selected{
+
+    &--selected {
       background-color: $color-col-selection;
     }
 
-    &--enabled:hover > &__number{
+    &--enabled:hover > &__number {
       font-weight: 600;
     }
 
-    &--selected > &__number{
+    &--selected > &__number {
       font-weight: 600;
     }
   }
