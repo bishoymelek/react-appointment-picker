@@ -3,6 +3,38 @@ import { Day } from './Day';
 import { Appointment } from './Appointment';
 import { Blank } from './Blank';
 
+export function getMonthStringOfNumber(num, locale) {
+  var enMonth = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December'
+  ];
+  var arMonth = [
+    'يناير',
+    'فبراير',
+    'مارس',
+    'ابريل',
+    'مايو',
+    'يونيو',
+    'يوليو',
+    'أغسطس',
+    'سبتمبر',
+    'اكتوبر',
+    'نوفمبر',
+    'ديسمبر'
+  ];
+  return locale === 'ar' ? arMonth[num] : enMonth[num];
+}
+
 type IdentifierType = string | number;
 
 interface AddedAppointmentInterface {
@@ -90,6 +122,7 @@ interface AppointmentPickerStateInterface {
   dayPeriods: number[];
   dayLength: number;
   currentWeekFirstDay?: Date;
+  currentMonth?: number;
 }
 
 export class AppointmentPicker extends Component<
@@ -115,7 +148,7 @@ export class AppointmentPicker extends Component<
     maxReservableAppointments: -1,
     initialDay: new Date(),
     unitTime: 15 * 60 * 1000,
-    local: 'en-US'
+    local: 'ar-EG'
   };
 
   constructor(props: AppointmentPickerPropsInterface) {
@@ -142,7 +175,8 @@ export class AppointmentPicker extends Component<
       size: size,
       dayPeriods,
       dayLength: Math.max.apply(null, dayPeriods),
-      currentWeekFirstDay: new Date(initialDay)
+      currentWeekFirstDay: new Date(initialDay),
+      currentMonth: initialDay.getMonth()
     };
     this.showPreviousWeek = this.showPreviousWeek.bind(this);
     this.showNextWeek = this.showNextWeek.bind(this);
@@ -391,7 +425,8 @@ export class AppointmentPicker extends Component<
     actualDay.setDate(actualDay.getDate() + 7);
     this.setState((prevState) => ({
       ...prevState,
-      currentWeekFirstDay: actualDay
+      currentWeekFirstDay: actualDay,
+      currentMonth: actualDay.getMonth()
     }));
   }
 
@@ -401,21 +436,28 @@ export class AppointmentPicker extends Component<
     actualDay.setDate(actualDay.getDate() - 7);
     this.setState((prevState) => ({
       ...prevState,
-      currentWeekFirstDay: actualDay
+      currentWeekFirstDay: actualDay,
+      currentMonth: actualDay.getMonth()
     }));
   }
 
   render() {
     const { weeklyDisplay } = this.props;
+    const { currentMonth } = this.state;
     return (
       <div className='appointment-content'>
         <div className={this.props.loading ? 'loader' : undefined} />
-        {weeklyDisplay && (
-          <div id='weekly-changer'>
-            <i className='arrow right' onClick={this.showPreviousWeek} />
-            <i className='arrow left' onClick={this.showNextWeek} />
+        <div>
+          {weeklyDisplay && (
+            <div style={{ display: 'inline-block' }} id='weekly-changer'>
+              <i className='arrow right' onClick={this.showPreviousWeek} />
+              <i className='arrow left' onClick={this.showNextWeek} />
+            </div>
+          )}
+          <div style={{ display: 'inline-block', fontSize: 20 }}>
+            {getMonthStringOfNumber(currentMonth, 'ar')}
           </div>
-        )}
+        </div>
         <div className='appointment-picker'>{this.renderDays()} </div>
       </div>
     );
